@@ -41,7 +41,8 @@ button:hover{background:var(--warn)}
 svg{width:100%;height:auto;display:block;background:var(--panel);border:1px solid var(--rule)}
 .legend{display:flex;gap:18px;flex-wrap:wrap;font-family:'Noto Sans JP',sans-serif;font-size:11px;color:var(--dim);margin-top:10px}
 .sw{display:inline-block;width:16px;height:3px;vertical-align:middle;margin-right:5px}
-table{width:100%;border-collapse:collapse;margin-top:22px;font-family:'Noto Sans JP',sans-serif;font-size:12px}
+.tablewrap{overflow-x:auto;margin-top:22px}
+table{width:100%;min-width:560px;border-collapse:collapse;font-family:'Noto Sans JP',sans-serif;font-size:12px}
 th{text-align:right;font-weight:500;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--rule);padding:7px 8px}
 th:first-child,td:first-child{text-align:left}
 td{text-align:right;padding:6px 8px;border-bottom:1px solid rgba(201,196,184,.5)}
@@ -57,7 +58,7 @@ tr.evt td{background:rgba(168,87,29,.09)}
 <div class="panel">
 <fieldset><legend>基本情報</legend>
 <label><span>本人 生年</span><input id="birth" value="" placeholder="1990"></label>
-<label><span>妻 生年</span><input id="sbirth" value="" placeholder="1990"></label>
+<label><span>パートナー 生年（任意）</span><input id="pbirth" value="" placeholder="1990"></label>
 <label><span>子 生年（複数可・カンマ区切り）</span><input id="dbirth" value="" placeholder="2020, 2022"></label>
 </fieldset>
 <fieldset><legend>現在の資産（万円）</legend>
@@ -92,7 +93,7 @@ tr.evt td{background:rgba(168,87,29,.09)}
 </fieldset>
 <fieldset><legend>年金</legend>
 <label><span>開始年齢</span><input id="penage" value="65"></label>
-<label><span>月額（夫婦計）</span><input id="pen" value="0"></label>
+<label><span>月額（世帯合計）</span><input id="pen" value="0"></label>
 </fieldset>
 <button id="run">シミュレーション実行</button>
 </div>
@@ -104,15 +105,19 @@ tr.evt td{background:rgba(168,87,29,.09)}
 <span><i class="sw" style="background:#8e2626"></i>下位5%</span>
 <span><i class="sw" style="background:#a8571d"></i>下位25%</span>
 <span><i class="sw" style="background:#12161c"></i>中央値</span>
-<span><i class="sw" style="background:#1f5f4f"></i>上位25%／95%</span>
+<span><i class="sw" style="background:#1f5f4f"></i>上位25%</span>
 </div>
-<table id="tbl"></table>
+<div class="tablewrap"><table id="tbl"></table></div>
 <div class="note">
 ・株式・投信は幾何ブラウン運動（対数正規）でシミュレート。実質リターン＝(1+名目)÷(1+インフレ)−1 で計算しています。<br>
 ・全ての金額は現在価値（実質）で入力します。インフレは実質リターンに織り込み済みのため、生活費を毎年増やす必要はありません。<br>
 ・現金は「保持上限」まで手元に残し、超過分は投資へ回します。不足分は投資資産を取り崩します。<br>
-・貸付は「回収率」を掛けた額だけを資産に算入します（0%なら全額回収不能として扱います）。<br>
-・破綻＝資産がゼロになった時点。以降その試行では資産は回復せず0のまま推移します。フェーズ2は末子が24歳になるまで、年金開始・目標年齢は本人の年齢を基準に計算します。
+・貸付は「回収率」を掛けた額だけを資産に算入し、以降は現金ではなく株式・投信と同じ運用資産として市場リターンの影響を受けます（0%なら全額回収不能として扱います）。<br>
+・破綻＝資産がゼロになった時点。以降その試行では資産は回復せず0のまま推移します。フェーズ2は末子が24歳（大学院卒業を想定）になるまでの固定値、年金開始・目標年齢は本人の年齢を基準に計算します。<br>
+・グラフの各パーセンタイル線は「その年ごとに全試行を横断集計した分布」であり、1つの試行を最後まで追った線ではありません。中央値が右肩上がりに見えても、上部の破綻確率（%）は別集計のため体感とズレることがあります。<br>
+・「破綻年 悲観5%／楽観95%」は、破綻した試行の中での早い順・遅い順の位置を示します（全試行の5%/95%点ではありません）。<br>
+・確率の色は90%以上が緑、70〜90%がオレンジ、70%未満が赤です。<br>
+・グラフは5%〜75%点の範囲を表示しています。95%点（意思決定への影響が小さい上振れ側）は「[目標年齢]歳時の幅」の数値のみに残しています。
 </div>
 </div>
 </div>
@@ -132,7 +137,7 @@ function childBirths(){
 
 function run(){
   const hasBirth=V('birth')>1900;
-  const hasSpouse=V('sbirth')>1900;
+  const hasPartner=V('pbirth')>1900;
   const dbirths=childBirths();
   const hasChild=dbirths.length>0;
   const lastGrad=hasChild?Math.max(...dbirths)+24:null;
@@ -154,7 +159,7 @@ function run(){
   const drift=Math.log(1+rmu)-sd*sd/2;
   const risk0=V('stock')+V('fund')+V('loan')*V('loanrec')/100;
   const cash0=V('cash');
-  const birth=V('birth'), sbirth=V('sbirth');
+  const birth=V('birth'), pbirth=V('pbirth');
   const p1end=YEAR+V('p1y'), p2end=hasChild?lastGrad:p1end, penY=birth+V('penage');
   const buf=V('buf');
   const target=Math.max(1,V('target'));
@@ -241,15 +246,15 @@ function run(){
     const cy=YEAR+y;
     const evt=(cy===p2end||cy===penY||cy===p1end);
     const childAges=hasChild?dbirths.map(b=>(cy-b)+'歳').join(', '):'—';
-    rows.push(`<tr class="${evt?'evt':''}"><td>${cy}</td><td>${cy-birth}歳</td><td>${hasSpouse?(cy-sbirth)+'歳':'—'}</td><td>${childAges}</td>
+    rows.push(`<tr class="${evt?'evt':''}"><td>${cy}</td><td>${cy-birth}歳</td><td>${hasPartner?(cy-pbirth)+'歳':'—'}</td><td>${childAges}</td>
       <td>${fmt(series.p5[y])}</td><td>${fmt(series.p25[y])}</td><td><b>${fmt(series.p50[y])}</b></td><td>${fmt(series.p75[y])}</td></tr>`);
   }
-  $('tbl').innerHTML=`<tr><th>年</th><th>本人</th><th>妻</th><th>子</th><th>5%</th><th>25%</th><th>中央</th><th>75%</th></tr>`+rows.join('');
+  $('tbl').innerHTML=`<tr><th>年</th><th>本人</th><th>パートナー</th><th>子</th><th>5%</th><th>25%</th><th>中央</th><th>75%</th></tr>`+rows.join('');
 }
 
 function draw(s,birth,dbirths,penY){
   const W=760,H=400,L=62,R=14,T=18,B=34;
-  const max=Math.max(...s.p95)*1.05||1;
+  const max=Math.max(...s.p75)*1.05||1;
   const x=i=>L+i*(W-L-R)/(HORIZON-1);
   const y=v=>H-B-(Math.min(v,max)/max)*(H-T-B);
   const path=a=>a.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join(' ');
@@ -262,7 +267,7 @@ function draw(s,birth,dbirths,penY){
     return `<line x1="${x(i)}" y1="${T}" x2="${x(i)}" y2="${H-B}" stroke="#a8571d" stroke-width=".8" stroke-dasharray="3 3"/>
     <text x="${x(i)+4}" y="${T+11}" fill="#a8571d" font-size="9" font-family="Noto Sans JP">${lab}</text>`;};
   $('chart').innerHTML=g
-    +`<path d="${area(s.p95,s.p5)}" fill="#1f5f4f" opacity=".08"/>`
+    +`<path d="${area(s.p75,s.p5)}" fill="#1f5f4f" opacity=".08"/>`
     +`<path d="${area(s.p75,s.p25)}" fill="#1f5f4f" opacity=".16"/>`
     +`<path d="${path(s.p5)}" fill="none" stroke="#8e2626" stroke-width="1.2"/>`
     +`<path d="${path(s.p25)}" fill="none" stroke="#a8571d" stroke-width="1.2"/>`
