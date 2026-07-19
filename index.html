@@ -31,9 +31,12 @@ button:hover{background:var(--warn)}
 .verdict{background:var(--panel);border:1px solid var(--rule);border-left:4px solid var(--warn);padding:22px;margin-bottom:22px}
 .big{font-family:'Noto Sans JP',sans-serif;font-size:52px;line-height:1;display:block}
 .vlabel{font-family:'Noto Sans JP',sans-serif;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);margin-bottom:22px}
+.statgroup{margin-bottom:16px}
+.stitle{font-family:'Noto Sans JP',sans-serif;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--warn);margin:0 0 6px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule)}
 .stat{background:var(--panel);padding:13px}
-.stat b{display:block;font-family:'Noto Sans JP',sans-serif;font-size:19px;font-weight:500;margin-top:3px}
+.stat b{display:block;font-family:'Noto Sans JP',sans-serif;font-size:19px;font-weight:500;margin-top:3px;white-space:nowrap}
+.stat b .agehint{display:block;font-size:11px;font-weight:400;color:var(--dim);white-space:normal;margin-top:2px}
 .stat i{font-style:normal;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-family:'Noto Sans JP',sans-serif}
 svg{width:100%;height:auto;display:block;background:var(--panel);border:1px solid var(--rule)}
 .legend{display:flex;gap:18px;flex-wrap:wrap;font-family:'Noto Sans JP',sans-serif;font-size:11px;color:var(--dim);margin-top:10px}
@@ -95,7 +98,7 @@ tr.evt td{background:rgba(168,87,29,.09)}
 </div>
 <div>
 <div class="verdict" id="verdict"></div>
-<div class="stats" id="stats"></div>
+<div id="stats"></div>
 <svg id="chart" viewBox="0 0 760 400" preserveAspectRatio="xMidYMid meet"></svg>
 <div class="legend">
 <span><i class="sw" style="background:#8e2626"></i>下位5%</span>
@@ -197,7 +200,7 @@ function run(){
   const survive=100*(N-fails.length)/N;
   const med=r=>fails.length?fails[Math.floor(r*(fails.length-1))]:null;
 
-  const medRuin=med(.5);
+  const medRuin=med(.5), pess5=med(.05), opt95=med(.95);
   const col=survive>=90?'var(--good)':survive>=70?'var(--warn)':'var(--bad)';
   $('verdict').style.borderLeftColor=col;
   $('verdict').innerHTML=
@@ -205,15 +208,32 @@ function run(){
     `<span class="big" style="color:${col}">${survive.toFixed(1)}%</span>`;
 
   const fmt=v=>v==null?'—':v>=10000?(v/10000).toFixed(2)+'億':Math.round(v).toLocaleString()+'万';
-  const at=y=>{const i=y-YEAR;return i>=0&&i<HORIZON?series.p50[i]:null;};
-  $('stats').innerHTML=[
-    ['破綻年 中央値',medRuin?`${medRuin}年 (${medRuin-birth}歳)`:'破綻せず'],
-    ['破綻年 悲観5%',fails.length?`${med(.05)}年`:'—'],
-    [p2end+'年 資産中央値',fmt(at(p2end))],
-    [V('penage')+'歳時 中央値',fmt(at(penY))],
-    [target+'歳時 中央値',fmt(at(birth+target))],
-    ['初期資産合計',fmt(risk0+cash0)]
-  ].map(([a,b])=>`<div class="stat"><i>${a}</i><b>${b}</b></div>`).join('');
+  const at=(y,arr)=>{const i=y-YEAR;return i>=0&&i<HORIZON?arr[i]:null;};
+  const ruinCell=y=>y?`${y}年<span class="agehint">(${y-birth}歳)</span>`:'—';
+  const targetYear=birth+target;
+  let peakIdx=0;
+  for(let i=1;i<HORIZON;i++) if(series.p50[i]>series.p50[peakIdx]) peakIdx=i;
+  const peakYear=YEAR+peakIdx;
+  const rangeAt=y=>`${fmt(at(y,series.p5))} 〜 ${fmt(at(y,series.p95))}<span class="agehint">5%〜95%点</span>`;
+  const group=(title,items)=>`<div class="statgroup"><div class="stitle">${title}</div><div class="stats">`+
+    items.map(([a,b])=>`<div class="stat"><i>${a}</i><b>${b}</b></div>`).join('')+`</div></div>`;
+
+  $('stats').innerHTML=
+    group('破綻リスク',[
+      ['破綻年 中央値',medRuin?`${medRuin}年<span class="agehint">(${medRuin-birth}歳)</span>`:'破綻せず'],
+      ['破綻年 悲観5%',ruinCell(pess5)],
+      ['破綻年 楽観95%',ruinCell(opt95)],
+    ])+
+    group('資産推移（中央値）',[
+      [p2end+'年 資産中央値',fmt(at(p2end,series.p50))],
+      [V('penage')+'歳時 中央値',fmt(at(penY,series.p50))],
+      [target+'歳時 中央値',fmt(at(targetYear,series.p50))],
+      ['資産ピーク（中央値）',`${fmt(series.p50[peakIdx])}<span class="agehint">${peakYear}年 (${peakYear-birth}歳)</span>`],
+    ])+
+    group('その他',[
+      [target+'歳時の幅',rangeAt(targetYear)],
+      ['初期資産合計',fmt(risk0+cash0)],
+    ]);
 
   draw(series,birth,dbirths,penY);
   const rows=[];
