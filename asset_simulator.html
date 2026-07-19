@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>資産取り崩しシミュレーター</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600&display=swap');
+:root{
+  --ink:#12161c; --paper:#eae7e0; --panel:#f5f3ee;
+  --rule:#c9c4b8; --dim:#6d6a63;
+  --good:#1f5f4f; --warn:#a8571d; --bad:#8e2626;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:'Noto Sans JP',system-ui,sans-serif;font-size:14px;line-height:1.6}
+.wrap{max-width:1180px;margin:0 auto;padding:32px 20px 80px}
+h1{font-family:'Noto Sans JP',sans-serif;font-weight:400;font-size:44px;line-height:1.05;margin:0 0 4px}
+h1 em{font-style:italic;color:var(--warn)}
+.sub{color:var(--dim);font-size:13px;margin-bottom:28px;border-bottom:1px solid var(--rule);padding-bottom:20px}
+.grid{display:grid;grid-template-columns:340px 1fr;gap:28px;align-items:start}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--rule);padding:18px}
+fieldset{border:0;border-top:1px solid var(--rule);margin:0 0 18px;padding:14px 0 0}
+legend{font-family:'Noto Sans JP',sans-serif;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--warn);padding-right:10px}
+label{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 9px;font-size:13px}
+label span{flex:1;color:var(--dim)}
+input{width:118px;padding:5px 8px;border:1px solid var(--rule);background:#fff;font-family:'Noto Sans JP',sans-serif;font-size:13px;text-align:right;color:var(--ink)}
+input:focus{outline:2px solid var(--warn);outline-offset:-1px}
+button{width:100%;padding:13px;background:var(--ink);color:var(--paper);border:0;font-family:'Noto Sans JP',sans-serif;font-size:12px;letter-spacing:.16em;text-transform:uppercase;cursor:pointer}
+button:hover{background:var(--warn)}
+.verdict{background:var(--panel);border:1px solid var(--rule);border-left:4px solid var(--warn);padding:22px;margin-bottom:22px}
+.big{font-family:'Noto Sans JP',sans-serif;font-size:52px;line-height:1;display:block}
+.vlabel{font-family:'Noto Sans JP',sans-serif;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);margin-bottom:22px}
+.stat{background:var(--panel);padding:13px}
+.stat b{display:block;font-family:'Noto Sans JP',sans-serif;font-size:19px;font-weight:500;margin-top:3px}
+.stat i{font-style:normal;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-family:'Noto Sans JP',sans-serif}
+svg{width:100%;height:auto;display:block;background:var(--panel);border:1px solid var(--rule)}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-family:'Noto Sans JP',sans-serif;font-size:11px;color:var(--dim);margin-top:10px}
+.sw{display:inline-block;width:16px;height:3px;vertical-align:middle;margin-right:5px}
+table{width:100%;border-collapse:collapse;margin-top:22px;font-family:'Noto Sans JP',sans-serif;font-size:12px}
+th{text-align:right;font-weight:500;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--rule);padding:7px 8px}
+th:first-child,td:first-child{text-align:left}
+td{text-align:right;padding:6px 8px;border-bottom:1px solid rgba(201,196,184,.5)}
+tr.evt td{background:rgba(168,87,29,.09)}
+.note{font-size:11px;color:var(--dim);margin-top:14px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>資産取り崩し<em>シミュレーター</em></h1>
+<div class="sub">モンテカルロ法 · 全ての金額は現在価値（実質）ベース</div>
+<div class="grid">
+<div class="panel">
+<fieldset><legend>基本情報</legend>
+<label><span>本人 生年</span><input id="birth" value="" placeholder="1990"></label>
+<label><span>妻 生年</span><input id="sbirth" value="" placeholder="1990"></label>
+<label><span>子 生年（複数可・カンマ区切り）</span><input id="dbirth" value="" placeholder="2020, 2022"></label>
+</fieldset>
+<fieldset><legend>現在の資産（万円）</legend>
+<label><span>株式</span><input id="stock" value="0"></label>
+<label><span>投資信託</span><input id="fund" value="0"></label>
+<label><span>現金</span><input id="cash" value="0"></label>
+<label><span>貸付</span><input id="loan" value="0"></label>
+<label><span>└ 回収率 %</span><input id="loanrec" value="0"></label>
+<label><span>現金の保持上限</span><input id="buf" value="600"></label>
+</fieldset>
+<fieldset><legend>市場想定</legend>
+<label><span>期待リターン %</span><input id="ret" value="7"></label>
+<label><span>リスク（σ）%</span><input id="vol" value="20"></label>
+<label><span>インフレ率 %</span><input id="inf" value="2"></label>
+<label><span>試行回数</span><input id="trials" value="10000"></label>
+<label><span>目標年齢（何歳まで）</span><input id="target" value="95"></label>
+</fieldset>
+<fieldset><legend>フェーズ1：現在〜</legend>
+<label><span>継続年数</span><input id="p1y" value="3"></label>
+<label><span>月収</span><input id="p1inc" value="0"></label>
+<label><span>月間生活費</span><input id="p1exp" value="0"></label>
+<label><span>月間追加投資</span><input id="p1inv" value="0"></label>
+</fieldset>
+<fieldset><legend>フェーズ2：〜末子の院卒</legend>
+<label><span>終了年（末子24歳）</span><output id="p2endOut" style="width:118px;padding:5px 8px;border:1px solid var(--rule);background:rgba(0,0,0,.04);font-family:'Noto Sans JP',sans-serif;font-size:13px;text-align:right;color:var(--dim)">子の生年を入力</output></label>
+<label><span>月収</span><input id="p2inc" value="0"></label>
+<label><span>月間生活費</span><input id="p2exp" value="0"></label>
+</fieldset>
+<fieldset><legend>フェーズ3：以降</legend>
+<label><span>月収</span><input id="p3inc" value="0"></label>
+<label><span>月間生活費</span><input id="p3exp" value="0"></label>
+</fieldset>
+<fieldset><legend>年金</legend>
+<label><span>開始年齢</span><input id="penage" value="65"></label>
+<label><span>月額（夫婦計）</span><input id="pen" value="0"></label>
+</fieldset>
+<button id="run">シミュレーション実行</button>
+</div>
+<div>
+<div class="verdict" id="verdict"></div>
+<div class="stats" id="stats"></div>
+<svg id="chart" viewBox="0 0 760 400" preserveAspectRatio="xMidYMid meet"></svg>
+<div class="legend">
+<span><i class="sw" style="background:#8e2626"></i>下位5%</span>
+<span><i class="sw" style="background:#a8571d"></i>下位25%</span>
+<span><i class="sw" style="background:#12161c"></i>中央値</span>
+<span><i class="sw" style="background:#1f5f4f"></i>上位25%／95%</span>
+</div>
+<table id="tbl"></table>
+<div class="note">
+・株式・投信は幾何ブラウン運動（対数正規）でシミュレート。実質リターン＝(1+名目)÷(1+インフレ)−1 で計算しています。<br>
+・全ての金額は現在価値（実質）で入力します。インフレは実質リターンに織り込み済みのため、生活費を毎年増やす必要はありません。<br>
+・現金は「保持上限」まで手元に残し、超過分は投資へ回します。不足分は投資資産を取り崩します。<br>
+・貸付は「回収率」を掛けた額だけを資産に算入します（0%なら全額回収不能として扱います）。<br>
+・破綻＝資産がゼロになった時点。以降その試行では資産は回復せず0のまま推移します。フェーズ2は末子が24歳になるまで、年金開始・目標年齢は本人の年齢を基準に計算します。
+</div>
+</div>
+</div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const V=id=>parseFloat($(id).value)||0;
+const YEAR=new Date().getFullYear();
+let HORIZON=70;   // 現在〜目標年齢までの年数（生年と目標年齢から算出）
+
+function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+function childBirths(){
+  return ($('dbirth').value||'').split(/[,、\s]+/).map(s=>parseFloat(s)).filter(y=>y>1900);
+}
+
+function run(){
+  const hasBirth=V('birth')>1900;
+  const hasSpouse=V('sbirth')>1900;
+  const dbirths=childBirths();
+  const hasChild=dbirths.length>0;
+  const lastGrad=hasChild?Math.max(...dbirths)+24:null;
+  $('p2endOut').textContent=hasChild?lastGrad+'年':'子なし（フェーズ2スキップ）';
+  if(V('stock')+V('fund')+V('cash')+V('loan')<=0 || !hasBirth){
+    const msg=!hasBirth?'生年を入力してください':'資産を入力してください';
+    const sub=!hasBirth
+      ? '年金開始年の計算に本人の生年が必要です。'
+      : '左の「現在の資産」に金額を入れると<br>シミュレーションが始まります。';
+    $('verdict').style.borderLeftColor='var(--rule)';
+    $('verdict').innerHTML='<div class="vlabel">'+msg+'</div>'+
+      '<div style="font-family:Noto Sans JP,sans-serif;font-size:26px;line-height:1.3">'+sub+'</div>';
+    $('stats').innerHTML='';$('chart').innerHTML='';$('tbl').innerHTML='';
+    return;
+  }
+  const N=Math.max(100,Math.min(20000,V('trials')));
+  const mu=V('ret')/100, sd=V('vol')/100, inf=V('inf')/100;
+  const rmu=(1+mu)/(1+inf)-1;                       // 実質期待リターン
+  const drift=Math.log(1+rmu)-sd*sd/2;
+  const risk0=V('stock')+V('fund')+V('loan')*V('loanrec')/100;
+  const cash0=V('cash');
+  const birth=V('birth'), sbirth=V('sbirth');
+  const p1end=YEAR+V('p1y'), p2end=hasChild?lastGrad:p1end, penY=birth+V('penage');
+  const buf=V('buf');
+  const target=Math.max(1,V('target'));
+  HORIZON=Math.max(5,Math.min(100,birth+target-YEAR+1));
+  const paths=[], ruin=[];
+
+  for(let t=0;t<N;t++){
+    let risk=risk0, cash=cash0, row=[], ruined=false;
+    for(let y=0;y<HORIZON;y++){
+      if(ruined){row.push(0);continue;}             // 破綻は吸収状態：以降は回復しない
+      const cy=YEAR+y;
+      let inc,exp,inv=0;
+      if(cy<p1end){inc=V('p1inc');exp=V('p1exp');inv=V('p1inv');}
+      else if(cy<p2end){inc=V('p2inc');exp=V('p2exp');}
+      else {inc=V('p3inc');exp=V('p3exp');}
+      if(cy>=penY) inc+=V('pen');
+
+      cash+=(inc-exp)*12;                          // 収入と生活費
+      if(inv>0){cash-=inv*12; risk+=inv*12;}       // 追加投資は現金→投資へ振替
+      if(cash<0){risk+=cash; cash=0;}              // 現金不足は投資資産から取崩
+      else if(cash>buf){risk+=cash-buf; cash=buf;} // 余剰現金は投資へ
+      if(risk<0){cash=Math.max(0,cash+risk); risk=0;}
+
+      risk*=Math.exp(drift+sd*gauss());            // 1年分の運用
+      const tot=Math.max(0,risk+cash);
+      if(tot<=0){risk=0;cash=0;ruined=true;}
+      row.push(tot);
+    }
+    paths.push(row);
+    let r=row.findIndex(v=>v<=0);
+    ruin.push(r<0?null:YEAR+r);
+  }
+
+  // パーセンタイル
+  const series={p5:[],p25:[],p50:[],p75:[],p95:[]};
+  for(let y=0;y<HORIZON;y++){
+    const a=paths.map(r=>r[y]).sort((x,z)=>x-z);
+    const q=p=>a[Math.floor(p*(N-1))];
+    series.p5.push(q(.05));series.p25.push(q(.25));
+    series.p50.push(q(.5));series.p75.push(q(.75));series.p95.push(q(.95));
+  }
+  const fails=ruin.filter(r=>r!==null).sort((a,b)=>a-b);
+  const survive=100*(N-fails.length)/N;
+  const med=r=>fails.length?fails[Math.floor(r*(fails.length-1))]:null;
+
+  const medRuin=med(.5);
+  const col=survive>=90?'var(--good)':survive>=70?'var(--warn)':'var(--bad)';
+  $('verdict').style.borderLeftColor=col;
+  $('verdict').innerHTML=
+    `<div class="vlabel">${target}歳（${birth+target}年）まで資産が持つ確率</div>`+
+    `<span class="big" style="color:${col}">${survive.toFixed(1)}%</span>`;
+
+  const fmt=v=>v==null?'—':v>=10000?(v/10000).toFixed(2)+'億':Math.round(v).toLocaleString()+'万';
+  const at=y=>{const i=y-YEAR;return i>=0&&i<HORIZON?series.p50[i]:null;};
+  $('stats').innerHTML=[
+    ['破綻年 中央値',medRuin?`${medRuin}年 (${medRuin-birth}歳)`:'破綻せず'],
+    ['破綻年 悲観5%',fails.length?`${med(.05)}年`:'—'],
+    [p2end+'年 資産中央値',fmt(at(p2end))],
+    [V('penage')+'歳時 中央値',fmt(at(penY))],
+    [target+'歳時 中央値',fmt(at(birth+target))],
+    ['初期資産合計',fmt(risk0+cash0)]
+  ].map(([a,b])=>`<div class="stat"><i>${a}</i><b>${b}</b></div>`).join('');
+
+  draw(series,birth,dbirths,penY);
+  const rows=[];
+  for(let y=0;y<HORIZON;y+=2){
+    const cy=YEAR+y;
+    const evt=(cy===p2end||cy===penY||cy===p1end);
+    const childAges=hasChild?dbirths.map(b=>(cy-b)+'歳').join(', '):'—';
+    rows.push(`<tr class="${evt?'evt':''}"><td>${cy}</td><td>${cy-birth}歳</td><td>${hasSpouse?(cy-sbirth)+'歳':'—'}</td><td>${childAges}</td>
+      <td>${fmt(series.p5[y])}</td><td>${fmt(series.p25[y])}</td><td><b>${fmt(series.p50[y])}</b></td><td>${fmt(series.p75[y])}</td></tr>`);
+  }
+  $('tbl').innerHTML=`<tr><th>年</th><th>本人</th><th>妻</th><th>子</th><th>5%</th><th>25%</th><th>中央</th><th>75%</th></tr>`+rows.join('');
+}
+
+function draw(s,birth,dbirths,penY){
+  const W=760,H=400,L=62,R=14,T=18,B=34;
+  const max=Math.max(...s.p95)*1.05||1;
+  const x=i=>L+i*(W-L-R)/(HORIZON-1);
+  const y=v=>H-B-(Math.min(v,max)/max)*(H-T-B);
+  const path=a=>a.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join(' ');
+  const area=(a,b)=>path(a)+' '+b.map((v,i)=>'L'+x(b.length-1-i).toFixed(1)+' '+y(b[b.length-1-i]).toFixed(1)).reverse().join(' ')+'Z';
+  let g='';
+  for(let i=0;i<=5;i++){const v=max*i/5;g+=`<line x1="${L}" y1="${y(v)}" x2="${W-R}" y2="${y(v)}" stroke="#c9c4b8" stroke-width=".5"/>
+    <text x="${L-7}" y="${y(v)+4}" text-anchor="end" fill="#6d6a63" font-size="10" font-family="Noto Sans JP">${v>=10000?(v/10000).toFixed(1)+'億':Math.round(v)}</text>`;}
+  for(let yy=0;yy<HORIZON;yy+=10){g+=`<text x="${x(yy)}" y="${H-12}" text-anchor="middle" fill="#6d6a63" font-size="10" font-family="Noto Sans JP">${YEAR+yy}</text>`;}
+  const mark=(cy,lab)=>{const i=cy-YEAR;if(i<0||i>=HORIZON)return'';
+    return `<line x1="${x(i)}" y1="${T}" x2="${x(i)}" y2="${H-B}" stroke="#a8571d" stroke-width=".8" stroke-dasharray="3 3"/>
+    <text x="${x(i)+4}" y="${T+11}" fill="#a8571d" font-size="9" font-family="Noto Sans JP">${lab}</text>`;};
+  $('chart').innerHTML=g
+    +`<path d="${area(s.p95,s.p5)}" fill="#1f5f4f" opacity=".08"/>`
+    +`<path d="${area(s.p75,s.p25)}" fill="#1f5f4f" opacity=".16"/>`
+    +`<path d="${path(s.p5)}" fill="none" stroke="#8e2626" stroke-width="1.2"/>`
+    +`<path d="${path(s.p25)}" fill="none" stroke="#a8571d" stroke-width="1.2"/>`
+    +`<path d="${path(s.p75)}" fill="none" stroke="#1f5f4f" stroke-width="1.2"/>`
+    +`<path d="${path(s.p50)}" fill="none" stroke="#12161c" stroke-width="2.2"/>`
+    +dbirths.map(b=>mark(b+24,'院卒')).join('')+mark(penY,'年金')
+    +`<line x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}" stroke="#12161c" stroke-width="1"/>`;
+}
+const STORAGE_KEY='asset-simulator-inputs';
+const inputEls=[...document.querySelectorAll('input')];
+
+function saveInputs(){
+  const data={};
+  inputEls.forEach(e=>data[e.id]=e.value);
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(data));}catch(e){}
+}
+function loadInputs(){
+  let saved;
+  try{saved=JSON.parse(localStorage.getItem(STORAGE_KEY));}catch(e){}
+  if(!saved) return;
+  inputEls.forEach(e=>{if(saved[e.id]!=null) e.value=saved[e.id];});
+}
+
+$('run').onclick=run;
+inputEls.forEach(e=>{
+  e.addEventListener('keydown',ev=>{if(ev.key==='Enter')run();});
+  e.addEventListener('input',()=>{saveInputs();run();});
+});
+loadInputs();
+run();
+</script>
+</body>
+</html>

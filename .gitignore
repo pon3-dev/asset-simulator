@@ -1,0 +1,10 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+*.swp
+
+# 個人用の初期値を持ち込む場合はここに追加してgit管理から外す
+config.local.js
