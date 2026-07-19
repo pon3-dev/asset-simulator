@@ -48,6 +48,14 @@ th:first-child,td:first-child{text-align:left}
 td{text-align:right;padding:6px 8px;border-bottom:1px solid rgba(201,196,184,.5)}
 tr.evt td{background:rgba(168,87,29,.09)}
 .note{font-size:11px;color:var(--dim);margin-top:14px;line-height:1.7}
+.hint{font-size:11px;color:var(--dim);margin:-4px 0 12px;line-height:1.6}
+.phaserow{border-top:1px dashed var(--rule);padding-top:10px;margin-top:10px}
+.phaserow:first-child{border-top:0;padding-top:0;margin-top:0}
+.ph-label{display:flex;justify-content:space-between;align-items:center;font-family:'Noto Sans JP',sans-serif;font-size:10px;letter-spacing:.1em;color:var(--dim);margin-bottom:6px}
+.ph-del{width:auto;padding:2px 8px;background:transparent;border:1px solid var(--rule);color:var(--dim);font-size:10px;font-weight:400;text-transform:none;letter-spacing:0;cursor:pointer}
+.ph-del:hover{background:var(--bad);border-color:var(--bad);color:#fff}
+.addbtn{width:100%;padding:8px;background:transparent;border:1px dashed var(--rule);color:var(--warn);font-family:'Noto Sans JP',sans-serif;font-size:11px;letter-spacing:.1em;cursor:pointer;margin-top:6px}
+.addbtn:hover{background:var(--panel)}
 </style>
 </head>
 <body>
@@ -60,6 +68,7 @@ tr.evt td{background:rgba(168,87,29,.09)}
 <label><span>本人 生年</span><input id="birth" value="" placeholder="1990"></label>
 <label><span>パートナー 生年（任意）</span><input id="pbirth" value="" placeholder="1990"></label>
 <label><span>子 生年（複数可・カンマ区切り）</span><input id="dbirth" value="" placeholder="2020, 2022"></label>
+<div class="hint" id="childHints"></div>
 </fieldset>
 <fieldset><legend>現在の資産（万円）</legend>
 <label><span>株式</span><input id="stock" value="0"></label>
@@ -76,20 +85,9 @@ tr.evt td{background:rgba(168,87,29,.09)}
 <label><span>試行回数</span><input id="trials" value="10000"></label>
 <label><span>目標年齢（何歳まで）</span><input id="target" value="95"></label>
 </fieldset>
-<fieldset><legend>フェーズ1：現在〜</legend>
-<label><span>継続年数</span><input id="p1y" value="3"></label>
-<label><span>月収</span><input id="p1inc" value="0"></label>
-<label><span>月間生活費</span><input id="p1exp" value="0"></label>
-<label><span>月間追加投資</span><input id="p1inv" value="0"></label>
-</fieldset>
-<fieldset><legend>フェーズ2：〜末子の院卒</legend>
-<label><span>終了年（末子24歳）</span><output id="p2endOut" style="width:118px;padding:5px 8px;border:1px solid var(--rule);background:rgba(0,0,0,.04);font-family:'Noto Sans JP',sans-serif;font-size:13px;text-align:right;color:var(--dim)">子の生年を入力</output></label>
-<label><span>月収</span><input id="p2inc" value="0"></label>
-<label><span>月間生活費</span><input id="p2exp" value="0"></label>
-</fieldset>
-<fieldset><legend>フェーズ3：以降</legend>
-<label><span>月収</span><input id="p3inc" value="0"></label>
-<label><span>月間生活費</span><input id="p3exp" value="0"></label>
+<fieldset><legend>フェーズ（現在〜、自由に追加）</legend>
+<div id="phasesList"></div>
+<button type="button" id="addPhase" class="addbtn">＋ フェーズを追加</button>
 </fieldset>
 <fieldset><legend>年金</legend>
 <label><span>開始年齢</span><input id="penage" value="65"></label>
@@ -113,7 +111,8 @@ tr.evt td{background:rgba(168,87,29,.09)}
 ・全ての金額は現在価値（実質）で入力します。インフレは実質リターンに織り込み済みのため、生活費を毎年増やす必要はありません。<br>
 ・現金は「保持上限」まで手元に残し、超過分は投資へ回します。不足分は投資資産を取り崩します。<br>
 ・貸付は「回収率」を掛けた額だけを資産に算入し、以降は現金ではなく株式・投信と同じ運用資産として市場リターンの影響を受けます（0%なら全額回収不能として扱います）。<br>
-・破綻＝資産がゼロになった時点。以降その試行では資産は回復せず0のまま推移します。フェーズ2は末子が24歳（大学院卒業を想定）になるまでの固定値、年金開始・目標年齢は本人の年齢を基準に計算します。<br>
+・破綻＝資産がゼロになった時点。以降その試行では資産は回復せず0のまま推移します。年金開始・目標年齢は本人の年齢を基準に計算します。<br>
+・フェーズの「終了年齢」は本人の年齢です。空欄のフェーズは目標年齢まで続きます。子の生年を入力すると、基本情報欄に小卒/中卒/高卒/大卒/院卒の年齢の目安が表示されるので、フェーズの区切りの参考にしてください（自動では反映されません）。<br>
 ・グラフの各パーセンタイル線は「その年ごとに全試行を横断集計した分布」であり、1つの試行を最後まで追った線ではありません。中央値が右肩上がりに見えても、上部の破綻確率（%）は別集計のため体感とズレることがあります。<br>
 ・「破綻年 悲観5%／楽観95%」は、破綻した試行の中での早い順・遅い順の位置を示します（全試行の5%/95%点ではありません）。<br>
 ・確率の色は90%以上が緑、70〜90%がオレンジ、70%未満が赤です。<br>
@@ -135,13 +134,53 @@ function childBirths(){
   return ($('dbirth').value||'').split(/[,、\s]+/).map(s=>parseFloat(s)).filter(y=>y>1900);
 }
 
+const MILESTONES=[['小卒',12],['中卒',15],['高卒',18],['大卒',22],['院卒',24]];
+function updateChildHints(){
+  const birth=V('birth'), dbirths=childBirths();
+  const el=$('childHints');
+  if(!dbirths.length||!(birth>1900)){ el.textContent=''; return; }
+  el.innerHTML=dbirths.map((b,i)=>{
+    const items=MILESTONES.map(([lab,age])=>`${lab}${b+age}年(本人${b+age-birth}歳)`).join(' / ');
+    return `第${i+1}子(${b}年生): ${items}`;
+  }).join('<br>');
+}
+
+// フェーズは可変長。endは本人の年齢（空欄なら最後まで続く）
+let phases=[{end:'',inc:'0',exp:'0',inv:'0'}];
+
+function renderPhases(){
+  $('phasesList').innerHTML=phases.map((p,i)=>`
+    <div class="phaserow">
+      <div class="ph-label"><span>フェーズ${i+1}</span>${phases.length>1?`<button type="button" class="ph-del" data-idx="${i}">削除</button>`:''}</div>
+      <label><span>終了年齢（空欄で最後まで）</span><input data-idx="${i}" data-field="end" value="${p.end}"></label>
+      <label><span>月収</span><input data-idx="${i}" data-field="inc" value="${p.inc}"></label>
+      <label><span>月間生活費</span><input data-idx="${i}" data-field="exp" value="${p.exp}"></label>
+      <label><span>月間追加投資</span><input data-idx="${i}" data-field="inv" value="${p.inv}"></label>
+    </div>`).join('');
+  $('phasesList').querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('keydown',ev=>{if(ev.key==='Enter')run();});
+    inp.addEventListener('input',()=>{
+      phases[+inp.dataset.idx][inp.dataset.field]=inp.value;
+      savePhases();run();
+    });
+  });
+  $('phasesList').querySelectorAll('.ph-del').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      phases.splice(+btn.dataset.idx,1);
+      renderPhases();savePhases();run();
+    });
+  });
+}
+function phaseAt(age){
+  return phases.find(p=>p.end===''||age<parseFloat(p.end)) || phases[phases.length-1];
+}
+
 function run(){
+  updateChildHints();
   const hasBirth=V('birth')>1900;
   const hasPartner=V('pbirth')>1900;
   const dbirths=childBirths();
   const hasChild=dbirths.length>0;
-  const lastGrad=hasChild?Math.max(...dbirths)+24:null;
-  $('p2endOut').textContent=hasChild?lastGrad+'年':'子なし（フェーズ2スキップ）';
   if(V('stock')+V('fund')+V('cash')+V('loan')<=0 || !hasBirth){
     const msg=!hasBirth?'生年を入力してください':'資産を入力してください';
     const sub=!hasBirth
@@ -160,22 +199,26 @@ function run(){
   const risk0=V('stock')+V('fund')+V('loan')*V('loanrec')/100;
   const cash0=V('cash');
   const birth=V('birth'), pbirth=V('pbirth');
-  const p1end=YEAR+V('p1y'), p2end=hasChild?lastGrad:p1end, penY=birth+V('penage');
+  const penY=birth+V('penage');
   const buf=V('buf');
   const target=Math.max(1,V('target'));
   HORIZON=Math.max(5,Math.min(100,birth+target-YEAR+1));
   const paths=[], ruin=[];
 
+  // 年ごとの収入・生活費・追加投資は試行間で共通なので事前計算しておく
+  const yearInc=[], yearExp=[], yearInv=[];
+  for(let y=0;y<HORIZON;y++){
+    const cy=YEAR+y, age=cy-birth, ph=phaseAt(age);
+    let inc=parseFloat(ph.inc)||0, exp=parseFloat(ph.exp)||0, inv=parseFloat(ph.inv)||0;
+    if(cy>=penY) inc+=V('pen');
+    yearInc.push(inc); yearExp.push(exp); yearInv.push(inv);
+  }
+
   for(let t=0;t<N;t++){
     let risk=risk0, cash=cash0, row=[], ruined=false;
     for(let y=0;y<HORIZON;y++){
       if(ruined){row.push(0);continue;}             // 破綻は吸収状態：以降は回復しない
-      const cy=YEAR+y;
-      let inc,exp,inv=0;
-      if(cy<p1end){inc=V('p1inc');exp=V('p1exp');inv=V('p1inv');}
-      else if(cy<p2end){inc=V('p2inc');exp=V('p2exp');}
-      else {inc=V('p3inc');exp=V('p3exp');}
-      if(cy>=penY) inc+=V('pen');
+      const inc=yearInc[y], exp=yearExp[y], inv=yearInv[y];
 
       cash+=(inc-exp)*12;                          // 収入と生活費
       if(inv>0){cash-=inv*12; risk+=inv*12;}       // 追加投資は現金→投資へ振替
@@ -230,7 +273,6 @@ function run(){
       ['破綻年 楽観95%',ruinCell(opt95)],
     ])+
     group('資産推移（中央値）',[
-      [p2end+'年 資産中央値',fmt(at(p2end,series.p50))],
       [V('penage')+'歳時 中央値',fmt(at(penY,series.p50))],
       [target+'歳時 中央値',fmt(at(targetYear,series.p50))],
       ['資産ピーク（中央値）',`${fmt(series.p50[peakIdx])}<span class="agehint">${peakYear}年 (${peakYear-birth}歳)</span>`],
@@ -240,11 +282,12 @@ function run(){
       ['初期資産合計',fmt(risk0+cash0)],
     ]);
 
-  draw(series,birth,dbirths,penY);
+  draw(series,penY);
+  const phaseYears=phases.filter(p=>p.end!=='').map(p=>birth+Math.round(parseFloat(p.end)));
   const rows=[];
   for(let y=0;y<HORIZON;y+=2){
     const cy=YEAR+y;
-    const evt=(cy===p2end||cy===penY||cy===p1end);
+    const evt=(cy===penY||phaseYears.includes(cy));
     const childAges=hasChild?dbirths.map(b=>(cy-b)+'歳').join(', '):'—';
     rows.push(`<tr class="${evt?'evt':''}"><td>${cy}</td><td>${cy-birth}歳</td><td>${hasPartner?(cy-pbirth)+'歳':'—'}</td><td>${childAges}</td>
       <td>${fmt(series.p5[y])}</td><td>${fmt(series.p25[y])}</td><td><b>${fmt(series.p50[y])}</b></td><td>${fmt(series.p75[y])}</td></tr>`);
@@ -252,7 +295,7 @@ function run(){
   $('tbl').innerHTML=`<tr><th>年</th><th>本人</th><th>パートナー</th><th>子</th><th>5%</th><th>25%</th><th>中央</th><th>75%</th></tr>`+rows.join('');
 }
 
-function draw(s,birth,dbirths,penY){
+function draw(s,penY){
   const W=760,H=400,L=62,R=14,T=18,B=34;
   const max=Math.max(...s.p75)*1.05||1;
   const x=i=>L+i*(W-L-R)/(HORIZON-1);
@@ -273,7 +316,7 @@ function draw(s,birth,dbirths,penY){
     +`<path d="${path(s.p25)}" fill="none" stroke="#a8571d" stroke-width="1.2"/>`
     +`<path d="${path(s.p75)}" fill="none" stroke="#1f5f4f" stroke-width="1.2"/>`
     +`<path d="${path(s.p50)}" fill="none" stroke="#12161c" stroke-width="2.2"/>`
-    +dbirths.map(b=>mark(b+24,'院卒')).join('')+mark(penY,'年金')
+    +mark(penY,'年金')
     +`<line x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}" stroke="#12161c" stroke-width="1"/>`;
 }
 const STORAGE_KEY='asset-simulator-inputs';
@@ -290,13 +333,25 @@ function loadInputs(){
   if(!saved) return;
   inputEls.forEach(e=>{if(saved[e.id]!=null) e.value=saved[e.id];});
 }
+function savePhases(){
+  try{localStorage.setItem(STORAGE_KEY+'-phases',JSON.stringify(phases));}catch(e){}
+}
+function loadPhases(){
+  try{
+    const saved=JSON.parse(localStorage.getItem(STORAGE_KEY+'-phases'));
+    if(Array.isArray(saved)&&saved.length) phases=saved;
+  }catch(e){}
+}
 
 $('run').onclick=run;
+$('addPhase').onclick=()=>{phases.push({end:'',inc:'0',exp:'0',inv:'0'});renderPhases();savePhases();run();};
 inputEls.forEach(e=>{
   e.addEventListener('keydown',ev=>{if(ev.key==='Enter')run();});
   e.addEventListener('input',()=>{saveInputs();run();});
 });
 loadInputs();
+loadPhases();
+renderPhases();
 run();
 </script>
 </body>
