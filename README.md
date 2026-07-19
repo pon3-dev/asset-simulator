@@ -6,13 +6,11 @@
 
 ### ローカルで開く
 
-`asset_simulator.html` をブラウザで開くだけです（ダブルクリックでOK）。
+`index.html` をブラウザで開くだけです（ダブルクリックでOK）。
 
 ### GitHub Pagesで公開する
 
-1. このリポジトリの Settings → Pages で公開ブランチを設定
-2. `asset_simulator.html` を `index.html` にリネームするか、Pagesの設定で公開対象ファイルを指定
-3. 公開されたURLにアクセス
+https://pon3-dev.github.io/asset-simulator/ で公開されています。
 
 ## 何をするツールか
 
