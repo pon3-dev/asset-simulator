@@ -9,30 +9,31 @@
 :root{
   --ink:#12161c; --paper:#eae7e0; --panel:#f5f3ee;
   --rule:#c9c4b8; --dim:#6d6a63;
+  --accent:#2f6672;
   --good:#1f5f4f; --warn:#a8571d; --bad:#8e2626;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--paper);color:var(--ink);font-family:'Noto Sans JP',system-ui,sans-serif;font-size:14px;line-height:1.6}
 .wrap{max-width:1180px;margin:0 auto;padding:32px 20px 80px}
 h1{font-family:'Noto Sans JP',sans-serif;font-weight:400;font-size:44px;line-height:1.05;margin:0 0 4px}
-h1 em{font-style:italic;color:var(--warn)}
+h1 em{font-style:italic;color:var(--accent)}
 .sub{color:var(--dim);font-size:13px;margin-bottom:28px;border-bottom:1px solid var(--rule);padding-bottom:20px}
-.grid{display:grid;grid-template-columns:340px 1fr;gap:28px;align-items:start}
-@media(max-width:900px){.grid{grid-template-columns:1fr}}
-.panel{background:var(--panel);border:1px solid var(--rule);padding:18px}
+.grid{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:28px;align-items:start}
+@media(max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--rule);padding:18px;min-width:0}
 fieldset{border:0;border-top:1px solid var(--rule);margin:0 0 18px;padding:14px 0 0}
-legend{font-family:'Noto Sans JP',sans-serif;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--warn);padding-right:10px}
-label{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 9px;font-size:13px}
-label span{flex:1;color:var(--dim)}
-input{width:118px;padding:5px 8px;border:1px solid var(--rule);background:#fff;font-family:'Noto Sans JP',sans-serif;font-size:13px;text-align:right;color:var(--ink)}
-input:focus{outline:2px solid var(--warn);outline-offset:-1px}
+legend{font-family:'Noto Sans JP',sans-serif;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);padding-right:10px}
+label{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:0 0 9px;font-size:13px;min-width:0}
+label span{flex:1;min-width:0;color:var(--dim);overflow-wrap:break-word}
+input{width:118px;max-width:40%;padding:5px 8px;border:1px solid var(--rule);background:#fff;font-family:'Noto Sans JP',sans-serif;font-size:13px;text-align:right;color:var(--ink)}
+input:focus{outline:2px solid var(--accent);outline-offset:-1px}
 button{width:100%;padding:13px;background:var(--ink);color:var(--paper);border:0;font-family:'Noto Sans JP',sans-serif;font-size:12px;letter-spacing:.16em;text-transform:uppercase;cursor:pointer}
-button:hover{background:var(--warn)}
-.verdict{background:var(--panel);border:1px solid var(--rule);border-left:4px solid var(--warn);padding:22px;margin-bottom:22px}
+button:hover{background:var(--accent)}
+.verdict{background:var(--panel);border:1px solid var(--rule);border-left:4px solid var(--accent);padding:22px;margin-bottom:22px}
 .big{font-family:'Noto Sans JP',sans-serif;font-size:52px;line-height:1;display:block}
 .vlabel{font-family:'Noto Sans JP',sans-serif;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
 .statgroup{margin-bottom:16px}
-.stitle{font-family:'Noto Sans JP',sans-serif;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--warn);margin:0 0 6px}
+.stitle{font-family:'Noto Sans JP',sans-serif;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:0 0 6px}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule)}
 .stat{background:var(--panel);padding:13px}
 .stat b{display:block;font-family:'Noto Sans JP',sans-serif;font-size:19px;font-weight:500;margin-top:3px;white-space:nowrap}
@@ -46,15 +47,15 @@ table{width:100%;min-width:560px;border-collapse:collapse;font-family:'Noto Sans
 th{text-align:right;font-weight:500;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);border-bottom:1px solid var(--rule);padding:7px 8px}
 th:first-child,td:first-child{text-align:left}
 td{text-align:right;padding:6px 8px;border-bottom:1px solid rgba(201,196,184,.5)}
-tr.evt td{background:rgba(168,87,29,.09)}
-.note{font-size:11px;color:var(--dim);margin-top:14px;line-height:1.7}
-.hint{font-size:11px;color:var(--dim);margin:-4px 0 12px;line-height:1.6}
+tr.evt td{background:rgba(47,102,114,.09)}
+.note{font-size:11px;color:var(--dim);margin-top:14px;line-height:1.7;overflow-wrap:break-word}
+.hint{font-size:11px;color:var(--dim);margin:-4px 0 12px;line-height:1.6;overflow-wrap:break-word}
 .phaserow{border-top:1px dashed var(--rule);padding-top:10px;margin-top:10px}
 .phaserow:first-child{border-top:0;padding-top:0;margin-top:0}
 .ph-label{display:flex;justify-content:space-between;align-items:center;font-family:'Noto Sans JP',sans-serif;font-size:10px;letter-spacing:.1em;color:var(--dim);margin-bottom:6px}
 .ph-del{width:auto;padding:2px 8px;background:transparent;border:1px solid var(--rule);color:var(--dim);font-size:10px;font-weight:400;text-transform:none;letter-spacing:0;cursor:pointer}
 .ph-del:hover{background:var(--bad);border-color:var(--bad);color:#fff}
-.addbtn{width:100%;padding:8px;background:transparent;border:1px dashed var(--rule);color:var(--warn);font-family:'Noto Sans JP',sans-serif;font-size:11px;letter-spacing:.1em;cursor:pointer;margin-top:6px}
+.addbtn{width:100%;padding:8px;background:transparent;border:1px dashed var(--rule);color:var(--accent);font-family:'Noto Sans JP',sans-serif;font-size:11px;letter-spacing:.1em;cursor:pointer;margin-top:6px}
 .addbtn:hover{background:var(--panel)}
 </style>
 </head>
@@ -87,6 +88,7 @@ tr.evt td{background:rgba(168,87,29,.09)}
 </fieldset>
 <fieldset><legend>フェーズ（現在〜、自由に追加）</legend>
 <div id="phasesList"></div>
+<div class="hint" id="phaseWarn" style="color:var(--bad)"></div>
 <button type="button" id="addPhase" class="addbtn">＋ フェーズを追加</button>
 </fieldset>
 <fieldset><legend>年金</legend>
@@ -112,7 +114,6 @@ tr.evt td{background:rgba(168,87,29,.09)}
 ・現金は「保持上限」まで手元に残し、超過分は投資へ回します。不足分は投資資産を取り崩します。<br>
 ・貸付は「回収率」を掛けた額だけを資産に算入し、以降は現金ではなく株式・投信と同じ運用資産として市場リターンの影響を受けます（0%なら全額回収不能として扱います）。<br>
 ・破綻＝資産がゼロになった時点。以降その試行では資産は回復せず0のまま推移します。年金開始・目標年齢は本人の年齢を基準に計算します。<br>
-・フェーズの「終了年齢」は本人の年齢です。空欄のフェーズは目標年齢まで続きます。子の生年を入力すると、基本情報欄に小卒/中卒/高卒/大卒/院卒の年齢の目安が表示されるので、フェーズの区切りの参考にしてください（自動では反映されません）。<br>
 ・グラフの各パーセンタイル線は「その年ごとに全試行を横断集計した分布」であり、1つの試行を最後まで追った線ではありません。中央値が右肩上がりに見えても、上部の破綻確率（%）は別集計のため体感とズレることがあります。<br>
 ・「破綻年 悲観5%／楽観95%」は、破綻した試行の中での早い順・遅い順の位置を示します（全試行の5%/95%点ではありません）。<br>
 ・確率の色は90%以上が緑、70〜90%がオレンジ、70%未満が赤です。<br>
@@ -175,8 +176,16 @@ function phaseAt(age){
   return phases.find(p=>p.end===''||age<parseFloat(p.end)) || phases[phases.length-1];
 }
 
+function updatePhaseWarn(){
+  const bad=phases.some(p=>p.end!==''&&parseFloat(p.end)>120);
+  $('phaseWarn').textContent=bad
+    ?'※「終了年齢」は本人の年齢（例: 37）を入力してください。西暦年（2027など）を入れるとそのフェーズが終了せず、以降のフェーズが無視されます。'
+    :'';
+}
+
 function run(){
   updateChildHints();
+  updatePhaseWarn();
   const hasBirth=V('birth')>1900;
   const hasPartner=V('pbirth')>1900;
   const dbirths=childBirths();
@@ -287,7 +296,7 @@ function run(){
   const rows=[];
   for(let y=0;y<HORIZON;y+=2){
     const cy=YEAR+y;
-    const evt=(cy===penY||phaseYears.includes(cy));
+    const evt=(cy===penY||cy+1===penY||phaseYears.includes(cy)||phaseYears.includes(cy+1));
     const childAges=hasChild?dbirths.map(b=>(cy-b)+'歳').join(', '):'—';
     rows.push(`<tr class="${evt?'evt':''}"><td>${cy}</td><td>${cy-birth}歳</td><td>${hasPartner?(cy-pbirth)+'歳':'—'}</td><td>${childAges}</td>
       <td>${fmt(series.p5[y])}</td><td>${fmt(series.p25[y])}</td><td><b>${fmt(series.p50[y])}</b></td><td>${fmt(series.p75[y])}</td></tr>`);
@@ -307,8 +316,8 @@ function draw(s,penY){
     <text x="${L-7}" y="${y(v)+4}" text-anchor="end" fill="#6d6a63" font-size="10" font-family="Noto Sans JP">${v>=10000?(v/10000).toFixed(1)+'億':Math.round(v)}</text>`;}
   for(let yy=0;yy<HORIZON;yy+=10){g+=`<text x="${x(yy)}" y="${H-12}" text-anchor="middle" fill="#6d6a63" font-size="10" font-family="Noto Sans JP">${YEAR+yy}</text>`;}
   const mark=(cy,lab)=>{const i=cy-YEAR;if(i<0||i>=HORIZON)return'';
-    return `<line x1="${x(i)}" y1="${T}" x2="${x(i)}" y2="${H-B}" stroke="#a8571d" stroke-width=".8" stroke-dasharray="3 3"/>
-    <text x="${x(i)+4}" y="${T+11}" fill="#a8571d" font-size="9" font-family="Noto Sans JP">${lab}</text>`;};
+    return `<line x1="${x(i)}" y1="${T}" x2="${x(i)}" y2="${H-B}" stroke="#2f6672" stroke-width=".8" stroke-dasharray="3 3"/>
+    <text x="${x(i)+4}" y="${T+11}" fill="#2f6672" font-size="9" font-family="Noto Sans JP">${lab}</text>`;};
   $('chart').innerHTML=g
     +`<path d="${area(s.p75,s.p5)}" fill="#1f5f4f" opacity=".08"/>`
     +`<path d="${area(s.p75,s.p25)}" fill="#1f5f4f" opacity=".16"/>`
